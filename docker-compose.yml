@@ -3,9 +3,13 @@ version: '3.8'
 services:
   mahlgrad:
     build: .
-    ports:
-      - "8080:80" # Frontend (Nginx)
-      - "8091:8090" # PocketBase API
+    # Ports entfernt für Coolify Deployment (vermeidet "port already allocated" Fehler)
+    # Coolify routed den Traffic automatisch über den internen Proxy auf Port 80
+    expose:
+      - "80"
+    # ports:
+    #   - "8080:80" # Frontend (Nginx)
+    #   - "8091:8090" # PocketBase API
     volumes:
       - pb_data:/app/pb_data
     environment:
