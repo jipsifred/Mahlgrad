@@ -39,9 +39,6 @@ COPY supervisord.conf /etc/supervisord.conf
 # Datenverzeichnis für PocketBase
 RUN mkdir -p /app/pb_data
 
-# Seed Daten für initialen Deploy (falls vorhanden)
-COPY pb_data_dump/ /app/pb_data_seed/
-
 # Startup-Script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
