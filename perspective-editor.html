@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perspektiv-Editor für Tassen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #eee;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .editor-wrapper {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .quad-editor {
+            background: #16213e;
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .quad-label {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #00d4ff;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            background: #0f0f23;
+            border-radius: 8px;
+            overflow: visible;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Corner Points */
+        .corner {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #ff6b6b;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            cursor: grab;
+            z-index: 20;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .corner:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.6);
+        }
+
+        .corner.dragging {
+            cursor: grabbing;
+            transform: translate(-50%, -50%) scale(1.3);
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+        }
+
+        /* Bezier Control Points */
+        .control-point {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #4ecdc4;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            cursor: grab;
+            z-index: 15;
+            transform: translate(-50%, -50%);
+            opacity: 0.8;
+        }
+
+        .control-point:hover {
+            transform: translate(-50%, -50%) scale(1.3);
+            opacity: 1;
+        }
+
+        .control-point.dragging {
+            cursor: grabbing;
+            transform: translate(-50%, -50%) scale(1.4);
+        }
+
+        /* Buttons */
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-copy {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .btn-copy:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-reset {
+            background: #2d3436;
+            color: #fff;
+        }
+
+        .btn-reset:hover {
+            background: #636e72;
+        }
+
+        /* Output */
+        .output-section {
+            margin-top: 30px;
+            background: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .output-section h3 {
+            margin-bottom: 15px;
+            color: #00d4ff;
+        }
+
+        pre {
+            background: #0f0f23;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #a8dadc;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 30px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Instructions */
+        .instructions {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .instructions h3 {
+            color: #ffd93d;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            color: #aaa;
+            font-size: 14px;
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.corner {
+            background: #ff6b6b;
+        }
+
+        .legend-dot.control {
+            background: #4ecdc4;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎨 Perspektiv-Editor</h1>
+        <p class="subtitle">Definiere die 3D-Perspektive für die Bilder auf den Tassen</p>
+
+        <div class="instructions">
+            <h3>📋 Anleitung</h3>
+            <ul>
+                <li><strong>Rote Punkte (Ecken):</strong> Ziehe sie um die Form des Vierecks zu ändern</li>
+                <li><strong>Türkise Punkte (Bezier-Kontrollpunkte):</strong> Befinden sich zwischen den Ecken - ziehe
+                    sie um die Kanten zu krümmen</li>
+                <li><strong>Copy Button:</strong> Kopiert die Koordinaten aller 3 Quads als JSON</li>
+            </ul>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot corner"></div>
+                <span>Eckpunkte (frei bewegbar)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot control"></div>
+                <span>Bezier-Kontrollpunkte (Krümmung)</span>
+            </div>
+        </div>
+
+        <div class="editor-wrapper" id="editors">
+            <!-- Editors werden per JS generiert -->
+        </div>
+
+        <div class="button-row">
+            <button class="btn-copy" onclick="copyConfig()">📋 Koordinaten kopieren</button>
+            <button class="btn-reset" onclick="resetAll()">🔄 Zurücksetzen</button>
+        </div>
+
+        <div class="output-section">
+            <h3>📊 Aktuelle Konfiguration</h3>
+            <pre id="output">Warte auf Änderungen...</pre>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Kopiert! ✓</div>
+
+    <script>
+        // Basierend auf den Rectangle-Positionen aus style.css
+        // Cup 1: left: 57.5px, top: 59.5px, 36x33px (relativ zu 157x129)
+        // Cup 2: left: 64.5px, top: 61px, 37x33px (relativ zu 168x125)
+        // Cup 3: left: 67px, top: 66px, 43x39px (relativ zu 189x140)
+
+        const cupConfigs = [
+            {
+                name: "Tasse 1",
+                imageSrc: "image 1.png",
+                cupSize: { w: 157, h: 129 },
+                rect: { x: 57.5, y: 59.5, w: 36, h: 33 }
+            },
+            {
+                name: "Tasse 2",
+                imageSrc: "image 2.png",
+                cupSize: { w: 168, h: 125 },
+                rect: { x: 64.5, y: 61, w: 37, h: 33 }
+            },
+            {
+                name: "Tasse 3",
+                imageSrc: "image 3.png",
+                cupSize: { w: 189, h: 140 },
+                rect: { x: 67, y: 66, w: 43, h: 39 }
+            }
+        ];
+
+        // Speichert alle Quad-Daten
+        const quads = [];
+
+        // Canvas Skalierung (original zu display)
+        const CANVAS_SIZE = 300;
+
+        class QuadEditor {
+            constructor(container, config, index) {
+                this.container = container;
+                this.config = config;
+                this.index = index;
+                this.scale = CANVAS_SIZE / Math.max(config.cupSize.w, config.cupSize.h);
+
+                // Initiale Eckpunkte (als Rechteck starten)
+                const rect = config.rect;
+                const s = this.scale;
+
+                // 4 Ecken: TL, TR, BR, BL
+                this.corners = [
+                    { x: rect.x * s, y: rect.y * s },                    // Top-Left
+                    { x: (rect.x + rect.w) * s, y: rect.y * s },         // Top-Right
+                    { x: (rect.x + rect.w) * s, y: (rect.y + rect.h) * s }, // Bottom-Right
+                    { x: rect.x * s, y: (rect.y + rect.h) * s }          // Bottom-Left
+                ];
+
+                // 4 Bezier-Kontrollpunkte (einer pro Kante, initial in der Mitte)
+                this.controlPoints = this.calculateInitialControlPoints();
+
+                // Bild laden
+                this.image = new Image();
+                this.imageLoaded = false;
+                this.image.onload = () => {
+                    this.imageLoaded = true;
+                    this.render();
+                };
+                this.image.src = config.imageSrc;
+
+                this.dragging = null;
+                this.init();
+            }
+
+            calculateInitialControlPoints() {
+                const c = this.corners;
+                return [
+                    this.midpoint(c[0], c[1]), // Top edge
+                    this.midpoint(c[1], c[2]), // Right edge
+                    this.midpoint(c[2], c[3]), // Bottom edge
+                    this.midpoint(c[3], c[0])  // Left edge
+                ];
+            }
+
+            midpoint(p1, p2) {
+                return { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+            }
+
+            init() {
+                // Canvas erstellen
+                this.canvas = document.createElement('canvas');
+                this.canvas.width = CANVAS_SIZE;
+                this.canvas.height = CANVAS_SIZE;
+                this.ctx = this.canvas.getContext('2d');
+
+                const canvasContainer = this.container.querySelector('.canvas-container');
+                canvasContainer.appendChild(this.canvas);
+
+                // Eckpunkte erstellen
+                this.cornerElements = this.corners.map((corner, i) => {
+                    const el = document.createElement('div');
+                    el.className = 'corner';
+                    el.style.left = corner.x + 'px';
+                    el.style.top = corner.y + 'px';
+                    el.dataset.type = 'corner';
+                    el.dataset.index = i;
+                    canvasContainer.appendChild(el);
+                    return el;
+                });
+
+                // Kontrollpunkte erstellen
+                this.controlElements = this.controlPoints.map((cp, i) => {
+                    const el = document.createElement('div');
+                    el.className = 'control-point';
+                    el.style.left = cp.x + 'px';
+                    el.style.top = cp.y + 'px';
+                    el.dataset.type = 'control';
+                    el.dataset.index = i;
+                    canvasContainer.appendChild(el);
+                    return el;
+                });
+
+                this.setupDragHandlers(canvasContainer);
+                this.render();
+            }
+
+            setupDragHandlers(container) {
+                const allPoints = [...this.cornerElements, ...this.controlElements];
+
+                allPoints.forEach(el => {
+                    el.addEventListener('mousedown', (e) => this.startDrag(e, el));
+                    el.addEventListener('touchstart', (e) => this.startDrag(e, el), { passive: false });
+                });
+
+                document.addEventListener('mousemove', (e) => this.onDrag(e));
+                document.addEventListener('touchmove', (e) => this.onDrag(e), { passive: false });
+                document.addEventListener('mouseup', () => this.endDrag());
+                document.addEventListener('touchend', () => this.endDrag());
+            }
+
+            startDrag(e, element) {
+                e.preventDefault();
+                element.classList.add('dragging');
+                this.dragging = {
+                    element,
+                    type: element.dataset.type,
+                    index: parseInt(element.dataset.index)
+                };
+            }
+
+            onDrag(e) {
+                if (!this.dragging) return;
+                e.preventDefault();
+
+                const rect = this.canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                let x = clientX - rect.left;
+                let y = clientY - rect.top;
+
+                // Clamp to canvas bounds (with some margin)
+                x = Math.max(-20, Math.min(CANVAS_SIZE + 20, x));
+                y = Math.max(-20, Math.min(CANVAS_SIZE + 20, y));
+
+                if (this.dragging.type === 'corner') {
+                    this.corners[this.dragging.index] = { x, y };
+                } else {
+                    this.controlPoints[this.dragging.index] = { x, y };
+                }
+
+                this.updatePointPositions();
+                this.render();
+                updateOutput();
+            }
+
+            endDrag() {
+                if (this.dragging) {
+                    this.dragging.element.classList.remove('dragging');
+                    this.dragging = null;
+                }
+            }
+
+            updatePointPositions() {
+                this.cornerElements.forEach((el, i) => {
+                    el.style.left = this.corners[i].x + 'px';
+                    el.style.top = this.corners[i].y + 'px';
+                });
+
+                this.controlElements.forEach((el, i) => {
+                    el.style.left = this.controlPoints[i].x + 'px';
+                    el.style.top = this.controlPoints[i].y + 'px';
+                });
+            }
+
+            render() {
+                const ctx = this.ctx;
+                ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+                // 1. Bild zeichnen (wenn geladen)
+                if (this.imageLoaded) {
+                    ctx.save();
+                    // Bild soll zentriert oder passend skaliert sein
+                    // Wir haben this.scale, das das Verhältnis von Original zu Canvas angibt
+                    const dw = this.config.cupSize.w * this.scale;
+                    const dh = this.config.cupSize.h * this.scale;
+                    ctx.drawImage(this.image, 0, 0, dw, dh);
+                    ctx.restore();
+                }
+
+                // 2. Hintergrund-Grid (leicht gedimmt damit man das Bild besser sieht)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= CANVAS_SIZE; i += 30) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, CANVAS_SIZE);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(0, i);
+                    ctx.lineTo(CANVAS_SIZE, i);
+                    ctx.stroke();
+                }
+
+                // Bezier-Linien von Ecken zu Kontrollpunkten
+                ctx.strokeStyle = 'rgba(78, 205, 196, 0.6)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 5]);
+
+                const c = this.corners;
+                const cp = this.controlPoints;
+
+                // Verbindungslinien
+                for (let i = 0; i < 4; i++) {
+                    const nextI = (i + 1) % 4;
+                    ctx.beginPath();
+                    ctx.moveTo(c[i].x, c[i].y);
+                    ctx.lineTo(cp[i].x, cp[i].y);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(c[nextI].x, c[nextI].y);
+                    ctx.lineTo(cp[i].x, cp[i].y);
+                    ctx.stroke();
+                }
+
+                ctx.setLineDash([]);
+
+                // Quad-Form mit Bezier-Kurven
+                ctx.beginPath();
+                ctx.moveTo(c[0].x, c[0].y);
+
+                // Top edge: TL -> TR mit Kontrollpunkt
+                ctx.quadraticCurveTo(cp[0].x, cp[0].y, c[1].x, c[1].y);
+                // Right edge: TR -> BR
+                ctx.quadraticCurveTo(cp[1].x, cp[1].y, c[2].x, c[2].y);
+                // Bottom edge: BR -> BL
+                ctx.quadraticCurveTo(cp[2].x, cp[2].y, c[3].x, c[3].y);
+                // Left edge: BL -> TL
+                ctx.quadraticCurveTo(cp[3].x, cp[3].y, c[0].x, c[0].y);
+
+                ctx.closePath();
+
+                // Fill - Halbtransparent damit man die Tasse sieht
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fill();
+
+                // Stroke
+                ctx.strokeStyle = '#ff6b6b';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            getData() {
+                const s = this.scale;
+                return {
+                    name: this.config.name,
+                    cupSize: this.config.cupSize,
+                    originalRect: this.config.rect,
+                    // Zurück in Original-Koordinaten konvertieren
+                    corners: this.corners.map(p => ({
+                        x: Math.round(p.x / s * 10) / 10,
+                        y: Math.round(p.y / s * 10) / 10
+                    })),
+                    controlPoints: this.controlPoints.map(p => ({
+                        x: Math.round(p.x / s * 10) / 10,
+                        y: Math.round(p.y / s * 10) / 10
+                    }))
+                };
+            }
+
+            reset() {
+                const rect = this.config.rect;
+                const s = this.scale;
+
+                this.corners = [
+                    { x: rect.x * s, y: rect.y * s },
+                    { x: (rect.x + rect.w) * s, y: rect.y * s },
+                    { x: (rect.x + rect.w) * s, y: (rect.y + rect.h) * s },
+                    { x: rect.x * s, y: (rect.y + rect.h) * s }
+                ];
+
+                this.controlPoints = this.calculateInitialControlPoints();
+                this.updatePointPositions();
+                this.render();
+            }
+        }
+
+        // Editor Instanzen
+        const editors = [];
+
+        function init() {
+            const container = document.getElementById('editors');
+
+            cupConfigs.forEach((config, i) => {
+                const editorDiv = document.createElement('div');
+                editorDiv.className = 'quad-editor';
+                editorDiv.innerHTML = `
+                    <div class="quad-label">${config.name}</div>
+                    <div class="canvas-container"></div>
+                `;
+                container.appendChild(editorDiv);
+
+                const editor = new QuadEditor(editorDiv, config, i);
+                editors.push(editor);
+            });
+
+            updateOutput();
+        }
+
+        function updateOutput() {
+            const data = editors.map(e => e.getData());
+            document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+        }
+
+        function copyConfig() {
+            const data = editors.map(e => e.getData());
+            const json = JSON.stringify(data, null, 2);
+
+            navigator.clipboard.writeText(json).then(() => {
+                showToast('Koordinaten kopiert! ✓');
+            }).catch(() => {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = json;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('Koordinaten kopiert! ✓');
+            });
+        }
+
+        function resetAll() {
+            editors.forEach(e => e.reset());
+            updateOutput();
+            showToast('Zurückgesetzt! 🔄');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+
+</html>

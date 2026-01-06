@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  mahlgrad:
+    build: .
+    ports:
+      - "8080:80" # Frontend (Nginx)
+      - "8091:8090" # PocketBase API
+    volumes:
+      - pb_data:/app/pb_data
+    environment:
+      # Diese Werte werden beim ersten Start für den Admin-Account verwendet
+      - PB_ADMIN_EMAIL=${PB_ADMIN_EMAIL:-admin@mahlgrad.local}
+      - PB_ADMIN_PASSWORD=${PB_ADMIN_PASSWORD:-mahlgrad2026}
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8090/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  pb_data:
+    driver: local

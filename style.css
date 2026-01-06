@@ -1,0 +1,1198 @@
+/* ========================================
+   MAHLGRAD - iPhone 16 PWA Clean
+   ======================================== */
+
+/* Die Basis-Styles (html, body, background) sind jetzt in index.html definiert */
+/* Wir behalten hier nur die App-spezifischen Styles */
+
+/* Alte Media Query entfernt, da die Brute Force Methode immer greift */
+
+.hidden {
+    display: none !important;
+}
+
+/* ========================================
+   HAUPTANSICHT
+   ======================================== */
+
+#app {
+    /* Positionierung über index.html geregelt */
+}
+
+/* ========================================
+   TASSEN CONTAINER
+   ======================================== */
+
+#cups-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    overflow: hidden;
+}
+
+/* Einzelne Tasse */
+.cup {
+    position: absolute;
+    cursor: pointer;
+    /* Drehpunkt unten mittig, weit außerhalb des Screens */
+    transform-origin: 196.5px calc(100vh + 500px);
+    will-change: transform;
+}
+
+.cup img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+}
+
+/* Tassen-Positionen aus Figma (in Pixel für iPhone 16: 393x852) */
+.cup-1 {
+    left: 20px;
+    top: 457px;
+    width: 157px;
+    height: 129px;
+}
+
+.cup-2 {
+    left: 197px;
+    top: 526px;
+    width: 168px;
+    height: 125px;
+}
+
+.cup-3 {
+    left: 29px;
+    top: 645px;
+    width: 189px;
+    height: 140px;
+}
+
+/* Animation nur beim Einblenden neuer Tassen */
+.cup.animate-in {
+    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        opacity 0.35s ease;
+}
+
+/* Overlay-Bild (Rectangle) Position relativ zur Tasse */
+.cup-overlay {
+    position: absolute;
+    background-size: cover;
+    background-position: center;
+    pointer-events: none;
+}
+
+/* Rectangle 1 auf Cup 1: Position relativ */
+.cup-1 .cup-overlay {
+    left: 57.5px;
+    top: 59.5px;
+    width: 36px;
+    height: 33px;
+}
+
+/* Rectangle 2 auf Cup 2 */
+.cup-2 .cup-overlay {
+    left: 64.5px;
+    top: 61px;
+    width: 37px;
+    height: 33px;
+}
+
+/* Rectangle 3 auf Cup 3 */
+.cup-3 .cup-overlay {
+    left: 67px;
+    top: 66px;
+    width: 43px;
+    height: 39px;
+}
+
+/* Edit Mode Wackeln */
+.cup.edit-mode {
+    animation: wiggle 0.3s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+
+    0%,
+    100% {
+        transform: rotate(-1deg);
+    }
+
+    50% {
+        transform: rotate(1deg);
+    }
+}
+
+/* ========================================
+   EDIT MODE INDICATOR
+   ======================================== */
+
+#edit-indicator {
+    position: fixed;
+    /* Respektiert Safe Area - unter der Dynamic Island */
+    top: calc(env(safe-area-inset-top, 59px) + 16px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* ========================================
+   DETAIL-ANSICHT
+   ======================================== */
+
+#detail-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    z-index: 200;
+    transform: translateX(100%);
+    will-change: transform;
+}
+
+#detail-view.visible {
+    display: flex !important;
+    transform: translateX(0);
+    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /* Ensure children can flow outside if needed, though usually fixed */
+}
+
+#detail-view.dragging {
+    transition: none;
+}
+
+#detail-content {
+    width: 100%;
+    height: 100%;
+    /* Respektiert Safe Areas für Inhalt */
+    padding-top: env(safe-area-inset-top, 59px);
+    padding-bottom: env(safe-area-inset-bottom, 34px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    overflow-y: auto;
+}
+
+/* ========================================
+   BILD-MENÜ MODAL
+   ======================================== */
+
+#image-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 300;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+#image-menu-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+#image-menu-content {
+    position: relative;
+    width: calc(100% - 20px);
+    max-width: 373px;
+    /* Respektiert Safe Area unten (Home Indicator) */
+    margin-bottom: calc(env(safe-area-inset-bottom, 34px) + 10px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#image-menu-content button {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+#btn-camera,
+#btn-gallery {
+    background: rgba(255, 255, 255, 0.95);
+    color: #007AFF;
+}
+
+#btn-cancel {
+    background: rgba(255, 255, 255, 0.95);
+    color: #FF3B30;
+    margin-top: 8px;
+}
+
+#image-menu-content button svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+}
+
+/* ========================================
+   GRINDER VIEW (DETAIL)
+   ======================================== */
+
+/* ========================================
+   GRINDER VIEW (DETAIL)
+   ======================================== */
+
+#grinder-view {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    /* Take remaining space */
+    min-height: 50vh;
+    /* FORCE visual presence */
+    overflow: visible;
+    /* ALLOW negative top positioning to show */
+    background-color: transparent;
+    z-index: 10;
+    touch-action: none;
+    /* Center content? No, we use absolute positioning for the disc */
+    display: block;
+    /* The disc is absolute, so flex centering fights it. Let's start with block. */
+}
+
+/* Ensure detail view allows full coverage */
+#detail-view {
+    background: transparent;
+    touch-action: none;
+    /* WICHTIG */
+}
+
+#grinder-disc {
+    position: absolute;
+    top: -297px;
+    left: 50%;
+    margin-left: -350.5px;
+    width: 701px;
+    height: 701px;
+    transform-origin: center center;
+    will-change: transform;
+    pointer-events: auto;
+    /* Allow interaction */
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#grinder-pointer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    /* Maintain aspect ratio */
+    display: block;
+    pointer-events: none;
+    z-index: 20;
+}
+
+/* Bento Grid Container */
+.bento-container {
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+    height: 160px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bento-item {
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.bento-item.hero {
+    grid-row: span 2;
+    background-color: #1C1C1E;
+}
+
+.bento-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.bento-hero-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1C1C1E;
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 32px;
+}
+
+.bento-item.glass {
+    background-color: rgba(28, 28, 30, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* Touch Feedback */
+    transition: background-color 0.2s;
+}
+
+.bento-item.glass:active {
+    background-color: rgba(44, 44, 46, 0.9);
+}
+
+.bento-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #9ca3af;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.bento-value {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* Time Controls Overlays */
+.flow-controls {
+    position: absolute;
+    inset: 0;
+    background: rgba(28, 28, 30, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+.bento-item.glass.editing .flow-controls {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.flow-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: white;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rating-stars {
+    display: flex;
+    gap: 4px;
+}
+
+.bento-star {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.15);
+    transition: color 0.15s, transform 0.1s;
+    padding: 2px;
+    /* Touch Area */
+}
+
+.bento-star.filled {
+    color: #FFD700;
+}
+
+/* CRITICAL FIXES FOR VISIBILITY */
+
+/* 1. Ensure Detail View allows stacking */
+#detail-view {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* 2. Grinder View darf nicht alles überdecken */
+/* Redundant rules removed/merged above */
+
+/* 3. Detail Content muss sichtbar und oben sein */
+#detail-content {
+    position: relative;
+    /* Nicht absolute, damit es im Flow ist */
+    z-index: 20;
+    width: 100%;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    /* Sichtbarkeitshilfe */
+}
+
+/* 4. Animation deaktivieren für Debugging */
+.bento-container {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    margin-bottom: 20px;
+}
+
+/* LAYOUT FIX FOR BENTO GRID */
+#detail-view {
+    display: flex;
+    /* Flexbox statt Block */
+    flex-direction: column;
+    justify-content: space-between;
+    /* Verteilen: Oben Grinder, Unten Grid */
+}
+
+/* Redundant rules removed/merged above */
+
+#detail-content {
+    /* Positioniert Bento Grid unten */
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
+    width: 100%;
+    z-index: 50;
+    pointer-events: auto;
+}
+
+/* Ensure Grinder stays interactive */
+.grinder-disc-container {
+    pointer-events: auto;
+}
+
+/* ========================================
+   NEUE RATING & BREW TIME UI
+   ======================================== */
+
+.rating-container,
+.brew-time-container {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    /* Ensure it receives pointer events */
+    pointer-events: auto;
+}
+
+.rating-container label,
+.brew-time-container label {
+    display: block;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+}
+
+.stars {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    /* Center stars */
+}
+
+.star {
+    font-size: 32px;
+    color: rgba(255, 255, 255, 0.15);
+    /* Slightly darker inactive state for premium feel */
+    cursor: pointer;
+    transition: color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.1s;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.star.active {
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    /* Premium glow */
+}
+
+.star:active {
+    transform: scale(1.2);
+}
+
+.brew-time-input {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* Space out controls */
+    gap: 12px;
+}
+
+.brew-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.brew-btn:active {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.brew-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: white;
+    min-width: 60px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    /* Monospace numbers preventing jitter */
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+}
+
+.brew-unit {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    margin-left: -8px;
+    /* Visual adjustment close to number */
+    font-weight: 500;
+}
+/* ========================================
+   UPDATED DETAIL LAYOUT (SCREENSHOT MATCH)
+   ======================================== */
+
+#detail-view {
+    background-color: #000 !important; /* Force Black Background */
+}
+
+#detail-content {
+    /* Position at bottom, taking needed space */
+    position: relative;
+    z-index: 50;
+    padding: 24px;
+    padding-bottom: calc(34px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    background: transparent;
+    pointer-events: none; /* Let clicks pass through container */
+}
+
+#detail-content > * {
+    pointer-events: auto; /* Re-enable for children */
+}
+
+/* 1. The Mug Image */
+.detail-image-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+#detail-cup-image {
+    width: 220px;
+    height: 220px;
+    border-radius: 24px; /* Soft square */
+    object-fit: cover;
+    background-color: #1a1a1a;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* 2. Controls Row */
+.controls-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    width: 100%;
+}
+
+/* Shared Box Style */
+.control-box {
+    background-color: #1C1C1E; /* iOS Dark Mode Gray */
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+}
+
+/* Update Label Styles */
+.control-box label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #8E8E93; /* iOS Gray Text */
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+/* Stars Adjustment */
+.stars {
+    gap: 4px;
+}
+.star {
+    font-size: 20px; /* Smaller to fit */
+}
+
+/* Brew Time Adjustment */
+.brew-time-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.brew-value {
+    font-size: 24px;
+    color: #fff;
+}
+.brew-unit {
+    display: none; /* Hide 'Sek' text to match screenshot clean look if desired, or keep small */
+}
+/* Hide buttons by default or make them subtle? Screenshot shows just "28s" maybe? 
+   User said "nect to eachother ... with margin".
+   Let's keep the +/- buttons but style them smaller or invisible until interaction? 
+   Actually, for a "native" feel, maybe tap to edit?
+   For now, I'll keep the buttons but make them blend in or be standard.
+*/
+
+.brew-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    background: #2C2C2E;
+}
+
+
+/* ========================================
+   NEW SCRUBBER FLOW CONTROL
+   ======================================== */
+
+.controls-row {
+    /* Give stars more space than time */
+    grid-template-columns: 1.8fr 1fr !important;
+}
+
+.flow-box {
+    /* Touch target needs to be clear */
+    cursor: ns-resize;
+    touch-action: none; /* Prevent scrolling while dragging */
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.2s;
+}
+
+.flow-box:active,
+.flow-box.scrubbing {
+    background-color: #2C2C2E; /* Highlight interaction */
+    transform: scale(0.98);
+}
+
+.brew-time-scrubber {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.brew-value {
+    font-size: 36px; /* Bigger number */
+    font-weight: 700;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.brew-unit {
+    font-size: 16px;
+    font-weight: 500;
+    color: #8E8E93;
+    margin-left: 2px;
+}
+
+/* Hide old buttons if any remain */
+.brew-btn {
+    display: none !important;
+}
+
+
+/* ========================================
+   REFINED LAYOUT (SQUARE & ALIGNED)
+   ======================================== */
+
+.detail-image-container {
+    width: 320px !important;
+    margin: 0 auto !important;
+    margin-bottom: 0 !important; /* Managed by parent gap */
+}
+
+#detail-cup-image {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important; /* Perfect Quadratic */
+    border-radius: 20px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+#detail-content {
+    gap: 16px !important; /* Equal gap vertical */
+    align-items: center; /* Center everything */
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.controls-row {
+    width: 320px !important;
+    display: grid !important;
+    grid-template-columns: 1fr 80px !important; /* Rating takes space, Flow is fixed smaller square */
+    gap: 16px !important; /* Equal gap horizontal */
+    margin: 0 auto !important;
+}
+
+.control-box {
+    height: 80px !important; /* Fixed height matching Flow Width */
+    padding: 0 !important;
+    border-radius: 16px !important;
+    background-color: #1C1C1E;
+}
+
+.flow-box {
+    aspect-ratio: 1 / 1 !important; /* Force Square */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.brew-time-scrubber {
+    flex-direction: column; /* Stack number and 's' or align baseline */
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    line-height: 1;
+}
+
+.brew-value {
+    font-size: 28px !important;
+    font-weight: 700;
+}
+
+.brew-unit {
+    display: inline-block !important; /* Visible */
+    font-size: 12px !important;
+    color: #8E8E93;
+    margin-top: 2px;
+}
+
+.rating-box {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.stars {
+    gap: 6px !important;
+}
+
+.star {
+    font-size: 28px !important; /* Slightly larger to fill space */
+    padding: 4px;
+}
+
+
+/* ========================================
+   SMALLER UI FOR BOTTOM FIT
+   ======================================== */
+
+#grinder-view {
+    min-height: 40vh !important; /* Reduce space taken by grinder */
+}
+
+/* Reduce width to 280px */
+.detail-image-container {
+    width: 250px !important;
+}
+
+.controls-row {
+    width: 250px !important;
+    gap: 12px !important;
+    grid-template-columns: 1fr 64px !important; /* Smaller square for flow */
+}
+
+.control-box {
+    height: 64px !important; /* Matches flow width */
+    border-radius: 14px !important;
+}
+
+#detail-content {
+    gap: 12px !important; /* Tighter gap */
+    padding-bottom: calc(20px + env(safe-area-inset-bottom)); /* Slightly less padding */
+}
+
+/* Adjust font sizes for smaller boxes */
+.star {
+    font-size: 24px !important; 
+    padding: 2px !important;
+}
+
+.brew-value {
+    font-size: 24px !important;
+}
+
+.brew-unit {
+    font-size: 10px !important;
+}
+
+
+/* ========================================
+   FINAL POSITIONING & TOUCH FIXES
+   ======================================== */
+
+/* Push UI Down: Ensure Top Area is Large */
+#grinder-view {
+    min-height: 55vh !important; /* Force grinder area to be tall, pushing content down */
+    flex: none !important; /* Don't shrink */
+    height: 55vh !important;
+}
+
+/* Ensure Stars are Interactive */
+.rating-box {
+    position: relative;
+    z-index: 1000; /* Super high z-index */
+    pointer-events: auto !important;
+}
+
+.star {
+    pointer-events: auto !important;
+    position: relative;
+    padding: 10px !important; /* Larger hit area */
+    margin: -5px; /* Compensate for padding */
+}
+
+/* Ensure no overlap issues */
+#detail-content {
+    justify-content: flex-end !important;
+    padding-bottom: calc(40px + env(safe-area-inset-bottom)) !important;
+}
+
+/* ========================================
+   FIXES: LOWER POSITION, LESS ROUNDED, TOUCH
+   ======================================== */
+
+/* 1. Push Down / Grinder Visibility */
+#grinder-view {
+    height: 58vh !important; /* Fixed height to force content down */
+    min-height: 58vh !important;
+    display: block !important;
+    flex: none !important;
+}
+
+#detail-content {
+    justify-content: flex-start !important; /* Align to top of its area (which is below grinder) */
+    padding-top: 20px !important; 
+}
+
+/* 2. Less Rounded & Dimensions */
+#detail-cup-image {
+    border-radius: 12px !important; /* Less rounded */
+}
+
+.control-box {
+    border-radius: 12px !important; /* Less rounded */
+}
+
+/* 3. Star Interaction Fixes */
+.rating-box {
+    z-index: 9999 !important;
+    position: relative;
+    pointer-events: auto !important;
+}
+
+.star {
+    padding: 15px 5px !important; /* Massive hit area vertical */
+    margin: 0 !important;
+    touch-action: manipulation;
+    cursor: pointer;
+    z-index: 10000 !important;
+    position: relative;
+}
+
+
+/* ========================================
+   FINE TUNING: VERTICAL POSITION
+   ======================================== */
+
+#grinder-view {
+    height: 52vh !important; /* Slight adjustment up from 58vh */
+    min-height: 52vh !important;
+}
+
+
+/* ========================================
+   SHIFT GRINDER RIGHT & POINTER ALIGNMENT
+   ======================================== */
+
+#grinder-disc {
+    /* Shift center to right */
+    left: 62% !important; /* Moves disc right so left edge is visible 'cut off' */
+}
+
+/* Align pointer with disc center */
+.grinder-pointer-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    /* Shift pointer container to match disc shift (12% shift from 50%) */
+    transform: translateX(12vw); 
+}
+
+/* Ensure Swipe Back doesn't break */
+/* (Grid view logic handles itself) */
+
+
+/* ========================================
+   REVERT & FIX OVERFLOW (Step Correction)
+   ======================================== */
+
+#grinder-disc {
+    /* Reset to center */
+    left: 50% !important;
+}
+
+.grinder-pointer-container {
+    /* Reset transform */
+    transform: none !important;
+}
+
+/* CLIP HORIZONTAL OVERFLOW at screen edge */
+#detail-view {
+    overflow-x: hidden !important;
+    width: 100vw !important;
+    left: 0 !important;
+}
+
+#grinder-view {
+    /* Ensure no horizontal scrolling inside */
+    overflow-x: hidden !important; 
+    width: 100% !important;
+}
+
+/* ========================================
+   REVERT & FIX OVERFLOW (Step Correction)
+   ======================================== */
+
+#grinder-disc {
+    /* Reset to center */
+    left: 50% !important;
+}
+
+.grinder-pointer-container {
+    /* Reset transform */
+    transform: none !important;
+}
+
+/* CLIP HORIZONTAL OVERFLOW at screen edge */
+#detail-view {
+    overflow-x: hidden !important;
+    width: 100vw !important;
+    left: 0 !important;
+}
+
+#grinder-view {
+    /* Ensure no horizontal scrolling inside */
+    overflow-x: hidden !important; 
+    width: 100% !important;
+}
+
+/* ========================================
+   INTERNAL SPACING REFINEMENTS
+   ======================================== */
+
+/* RATING BOX REFINEMENTS */
+.rating-box {
+    padding: 0 12px !important; /* Add side padding to container */
+}
+
+.stars {
+    display: flex !important;
+    justify-content: space-between !important; /* Spread stars evenly across the wide box */
+    width: 100% !important;
+    align-items: center !important;
+    gap: 0 !important; /* Let space-between handle it */
+}
+
+.star {
+    font-size: 24px !important;
+    padding: 12px 0 !important; /* Vertical hit area */
+    width: 100% !important; /* Flex grow for hit area */
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 !important;
+}
+
+
+/* FLOW BOX REFINEMENTS */
+.brew-time-scrubber {
+    display: flex !important;
+    flex-direction: row !important; /* Switch to Row for better "28s" look */
+    align-items: baseline !important;
+    justify-content: center !important;
+    padding-top: 4px !important; /* Optical vertical center fix */
+}
+
+.brew-value {
+    font-size: 28px !important;
+    line-height: 1 !important;
+    letter-spacing: -1px !important;
+}
+
+.brew-unit {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #8E8E93;
+    margin-left: 1px !important;
+}
+
+
+/* ========================================
+   OPTICAL CORRECTIONS (STARS & TIME)
+   ======================================== */
+
+/* 1. STARS: VISUAL CENTERING */
+.rating-box {
+    justify-content: center !important; /* Back to center grouping */
+    gap: 2px !important; /* Tighter interaction */
+    padding: 0 4px !important;
+}
+
+.star {
+    font-size: 26px !important;
+    width: 36px !important; /* Fixed width for visual rhythm */
+    height: 44px !important; /* Full height of internal area */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    /* Correct vertical offset for Unicode star */
+    padding-bottom: 3px !important; 
+}
+
+/* 2. SECONDS: CLEANER LAYOUT */
+.brew-time-scrubber {
+    flex-direction: row !important; /* Keep row */
+    align-items: flex-end !important; /* Align bottom of numbers */
+    justify-content: center !important;
+    padding-bottom: 16px !important; /* Push up slightly to look centered */
+    gap: 2px !important;
+}
+
+.brew-value {
+    font-size: 28px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    height: 28px !important; /* Fix height for alignment */
+    display: flex;
+    align-items: flex-end;
+}
+
+.brew-unit {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #9CA3AF !important;
+    margin-bottom: 3px !important; /* Minor tweak to align text baseline */
+    line-height: 1 !important;
+}
+
+/* Ensure the box itself centers the content vertically */
+.flow-box {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+
+/* ========================================
+   FINAL SIMPLIFICATION: SECONDS ONLY
+   ======================================== */
+
+/* REMOVE 's' UNIT */
+.brew-unit {
+    display: none !important;
+}
+
+/* PERFECT CENTER NUMBER */
+.brew-time-scrubber {
+    padding: 0 !important; /* Remove optical offset */
+    align-items: center !important; /* Mathematical center vertical */
+    justify-content: center !important; /* Mathematical center horizontal */
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.brew-value {
+    font-size: 32px !important; /* Slightly larger since alone */
+    height: auto !important;
+    line-height: 1 !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: translateY(-1px); /* Micro-adjustment for font baseline */
+}
+

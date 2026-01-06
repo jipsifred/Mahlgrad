@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- Radikaler Reset des Viewports: Wir erlauben alles, um Grenzen zu sprengen -->
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Status-Bar auf transparent/schwarz erzwingen -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mahlgrad">
+
+    <title>Mahlgrad</title>
+    <link rel="manifest" href="/manifest.json">
+    <!-- WICHTIG: iOS Icons in allen Varianten -->
+    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
+    <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+
+    <!-- CSS direkt eingebettet für maximalen Kontroll-Test -->
+    <style>
+        /* 1. Alles auf Null setzen */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            /* RADIKAL: Kein Element darf von sich aus weiß sein, außer wir sagen es */
+            /* background: transparent; <- Vorsichtig, das könnte Buttons killen. */
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: transparent;
+
+            /* FORCE INTO SAFE AREA */
+            padding-bottom: env(safe-area-inset-bottom);
+            margin-bottom: -50px;
+            /* Pull content down */
+        }
+
+        /* 2. Der Hintergrund-Layer - NEU GEDACHT */
+        /* Wir nutzen absolute Positionierung relativ zum Viewport */
+        #background-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+
+            /* WICHTIG: Damit iOS die Adressleiste ignoriert */
+            height: 100dvh;
+
+            /* Das Bild soll den Container FÜLLEN */
+            background-image: url('Background.png');
+            background-size: cover;
+            background-position: center bottom;
+            /* Ankerpunkt UNTEN */
+            background-repeat: no-repeat;
+
+            z-index: 0;
+
+            /* Trick: Wir skalieren das Bild leicht hoch, um weiße Blitzer zu killen */
+            transform: scale(1.02);
+            transform-origin: center bottom;
+        }
+
+        /* Test-Modus: Falls du sehen willst, wo der Container endet */
+        /* #background-layer { border: 2px solid red; } */
+
+        /* 3. Deine App Inhalte */
+        #app {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            /* oder 100dvh */
+            z-index: 10;
+            background: transparent !important;
+            /* SICHERSTELLEN */
+            pointer-events: none;
+            /* Klicks durchlassen, Kinder reaktivieren */
+        }
+
+        #app>* {
+            pointer-events: auto;
+            /* Kinder wieder klickbar machen */
+        }
+
+        /* Rest deiner Styles (Tassen etc.) laden wir dynamisch oder kopieren sie rein */
+    </style>
+
+    <!-- Deine alte CSS Datei für die Tassen-Logik weiterhin laden -->
+    <link rel="stylesheet" href="style.css?v=fresh9">
+</head>
+
+<body>
+    <!-- Kein IMG Tag mehr, wir nutzen CSS Background für bessere Kontrolle -->
+    <div id="background-layer"></div>
+
+    <div id="app">
+        <div id="cups-container">
+            <!-- Tassen kommen hier rein per JS -->
+        </div>
+
+        <div id="edit-indicator" class="hidden">
+            <span>Bearbeitungsmodus</span>
+        </div>
+    </div>
+
+    <!-- Menüs und Modals bleiben gleich -->
+    <div id="detail-view" class="hidden">
+        <!-- Grinder View: Full Screen, ignoring safe areas -->
+        <div id="grinder-view">
+            <div class="grinder-disc-container">
+                <img src="Drehende_Mahleinstell_scheibe.png" id="grinder-disc" alt="Mahlgrad Scheibe" draggable="false">
+            </div>
+            <div class="grinder-pointer-container">
+                <img src="Fester_Zeiger.png" id="grinder-pointer" alt="Zeiger">
+            </div>
+        </div>
+
+        <div id="detail-content">
+            <!-- Content overlay if needed later -->
+        </div>
+    </div>
+
+    <div id="image-menu" class="hidden">
+        <div id="image-menu-backdrop"></div>
+        <div id="image-menu-content">
+            <button id="btn-camera">Foto aufnehmen</button>
+            <button id="btn-gallery">Aus Galerie wählen</button>
+            <button id="btn-cancel">Abbrechen</button>
+        </div>
+    </div>
+
+    <input type="file" id="file-input" accept="image/*" class="hidden">
+    <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
+
+    <script src="api.js?v=2"></script>
+    <script src="app.js?v=fresh12"></script>
+</body>
+
+</html>
